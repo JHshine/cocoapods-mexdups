@@ -18,27 +18,53 @@ module Pod
     #       in the `plugins.json` file, once your plugin is released.
     #
     class Mexdups < Command
-      self.summary = 'Short description of cocoapods-mexdups.'
+
+      require 'fileutils'
+      require 'find'
+
+      self.summary = '根据pod组件移除壳工程中的重复文件,先输入pod文件夹，再输入工程文件夹'
 
       self.description = <<-DESC
-        Longer description of cocoapods-mexdups.
+        指定Pod目录和壳工程目录,搜索并移除壳工程目录已存在的重复文件
       DESC
 
-      self.arguments = 'NAME'
-
+      # 接收两个目录路径
       def initialize(argv)
-        @name = argv.shift_argument
+        @pod_folder = argv.shift_argument
+        @shell_folder = argv.shift_argument
         super
       end
 
       def validate!
         super
-        help! 'A Pod name is required.' unless @name
+        help! 'pod folder is required.' unless @pod_folder
+        help! 'shell folder is required.' unless @shell_folder
       end
 
       def run
-        UI.puts "Add your implementation for the cocoapods-mexdups plugin in #{__FILE__}"
+        # FileUtils.rm_r 'Pods', :force => true
+        # TOOD: 列举pod folder中的所有文件名
+
+        pod_file_map = {}
+
+        Find.find(@pod_folder) do |path|
+          unless Dir.exist? path
+            pod_file_map[(File.basename path)] = true
+          end
+        end
+
+        Find.find(@shell_folder) do |path|
+          unless Dir.exist? path
+            file_name = File.basename(path)
+            if pod_file_map[file_name] == true
+              UI.puts "发现重复文件 #{file_name}"
+              FileUtils.rm_f path
+            end
+          end
+        end
+
       end
+      
     end
   end
 end
